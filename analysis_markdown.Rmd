@@ -5,8 +5,10 @@ author: Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., 
   L.J. , Müller, C. & Hoffman, J.I.
 output:
   html_document:
-    theme: flatly
+    highlight: pygments
+  pdf_document: default
 ---
+!!!This file is under developement!!! and will soon contain all major analyses.
 
 This is a script providing the code for all major analyses in our paper, follwing
 the order of analyses ni the results section. Some large
@@ -194,7 +196,8 @@ num_comp <- as.vector(apply(scent, 1, function(x) length(x[x>0])))
 ```{r}
 het_mum <- heterozygosity[factors$age == 1]
 num_comp_mum <- num_comp[factors$age==1]
-# summary(glm(het_mum ~ num_comp_mum))
+# summary(glm(het_mum ~ num_comp_mum)))
+
 ```
 
 ```{r, echo = FALSE, fig.width=5, fig.height=4}
