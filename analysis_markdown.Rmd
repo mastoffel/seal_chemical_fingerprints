@@ -4,21 +4,20 @@ title: Fur seal chemical fingerprints encode colony membership, mother-offspring
 author: Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart-Phillips,
   L.J. , Müller, C. & Hoffman, J.I.
 output:
+  pdf_document: default
   html_document:
     highlight: pygments
-  pdf_document: default
 bibliography: cites.bib
 ---
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning = FALSE
 ```
 
-This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. The Rmarkdown file as well as the data are stored on GitHub
-For any questions just contact me: martin.adam.stoffel@gmail.com
+This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. The Rmarkdown file as well as the data are stored on GitHub. For any questions just contact me: martin.adam.stoffel@gmail.com
 
-We a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on this  [GitHub repository](https://github.com/mastoffel/scent/tree/master/final_script). The inbreedR package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, one needs to install the `devtools` package.  
+We wrote a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on this  [GitHub repository](https://github.com/mastoffel/scent/tree/master/final_script). The inbreedR package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, one needs to install the `devtools` package.  
 
-Some functions have been outsourced. The raw data is in the files directory.
+For running the complete code you need two additional functions (`get_pairdiff` and `multiplot`) which are outsourced as well as the `files` folder as a subfolder.
 
 ```{r, results="hide", message=FALSE, cache = TRUE}
 # install.packages("devtools")
@@ -79,8 +78,11 @@ arbitrary and not shown. The plot is better visualized with colours (see paper) 
 is shown here for the purpose of demonstration. Mother-offspring pairs can be
 identified by labels (e.g. M14, P14).
 
-```{r, fig.height=6, fig.width=6, warning = FALSE, results = FALSE}
+```{r, results = FALSE}
 scent_mds <- MASS::isoMDS(vegdist(scent))
+```
+
+```{r, fig.height=6, fig.width=6, warning = FALSE, results = FALSE}
 vegan::ordiplot(scent_mds, type = "t", ylab = "", xlab = "",axes=FALSE, frame.plot=TRUE)
 ```
 
@@ -104,12 +106,12 @@ vegan::anosim(dat = scent[factors$age == 2, ], grouping = factors$colony,
        distance = "bray", permutations = 1000)
 ```
 
-*Genetic differentiation of the two colonies was assesed through the software "Structure" [@Pritchard:2000uv]*  
+*Genetic differentiation of the two colonies was assesed through bayesian structure analysis, with the software "Structure" [@Pritchard:2000uv]*  
 
 ***
 ### Mother offspring similarity in chemical fingerprints. 
 
-**Overall**
+**Full sample**
 ```{r, cache=TRUE}
 vegan::anosim(dat = scent, grouping = factors$family, 
        distance = "bray", permutations = 1000)
@@ -134,7 +136,7 @@ vegan::anosim(dat = scent[factors$colony == 2, ],
 ***
 ### Chemical similarity vs. geographic distance on special study beach 
 
-* location data in meters is just available for this population as the special study beach on Bird Island provides an aerial walkway
+* location data in meters is available for this population as the special study beach on Bird Island provides an aerial walkway
  
 Loading X-Y coordinates of each individual.
 
@@ -176,13 +178,13 @@ vegan::mantel(geo_pup, scent_pup, method = "spearman")
 #### Relatedness and overall chemical similarity
 
 Load pairwise relatedness [@Queller:1989wl] based on 41 microsatellite markers.
-```{r}
+```{r, fig.width = 5, fig.height = 4}
 relatedness <- as.matrix(read.csv(".\\files\\relatedness.csv",row.names=1))
 head(relatedness[1:6, 1:6])
 hist(relatedness)
 ```
 
-Pairwise bray curtis similarity in chemical fingerprints of all individuals.
+**Pairwise bray curtis similarity in chemical fingerprints of all individuals.**
 ```{r}
 scent_bc <- 1-(as.matrix(vegan::vegdist(as.matrix(scent)), method = "bray")) 
 head(scent_bc[1:6, 1:6])
@@ -193,16 +195,18 @@ head(scent_bc[1:6, 1:6])
 vegan::mantel(relatedness, scent_bc, method = "spearman", permutation = 1000)
 ```
 
-We find a significant relationship between the overall chemical fingerprints and genetic relatedness. However, we are likely to have a problem of pseudoreplication here. For that reason, we are analysing mothers and pups seperately.  
-
+We find a significant relationship between the overall chemical fingerprints and genetic relatedness. However, we are likely to have a problem of pseudoreplication here. For that reason, we are analysing mothers and pups seperately.    
+  
 **Fur seal mothers: mantel test between  genetic relatedness and bray curtis similarity of olfactory fingerprints.**
+
 ```{r}
 vegan::mantel(relatedness[factors$age == 1, factors$age == 1], 
               scent_bc[factors$age == 1, factors$age == 1],
               method = "spearman", permutation = 1000)
 ```
 
-** Fur seal pups: mantel test between genetic relatedness and bray curtis similarity of olfactory fingerprints**
+**Fur seal pups: mantel test between genetic relatedness and bray curtis similarity of olfactory fingerprints.**
+
 ```{r}
 vegan::mantel(relatedness[factors$age == 2, factors$age == 2], 
               scent_bc[factors$age == 2, factors$age == 2],
@@ -212,7 +216,7 @@ vegan::mantel(relatedness[factors$age == 2, factors$age == 2],
 ***
 ## Correlation between heterozygosity (sMLH) and diversity (number of compounds) of chemical fingerprints
 
-* The function `sMLH`  is part of the `inbreedR` package, currently available on GitHub. Install with:
+* The function `sMLH`  is part of the `inbreedR` package, currently available on GitHub. Install with: (decomment the whole section for actually installing from github)
 
 ```{r}
 # install.packages("devtools")
@@ -223,10 +227,11 @@ library(inbreedR)
 ```
 
 Loading raw genotypes and calculating standardised multilocus heterozygosity (sMLH) based on 41 markers.
+* `inbreedR`package requires a special format, see `?convert_raw` for more information`*
 
 ```{r}
 genotypes <- read.table(".\\files\\genotypes.txt", row.names=1)
-genotypes_formatted <- inbreedR::convert_raw(genotypes, miss_val = NA) # inbreedR package requires formatting, see ?convert_raw
+genotypes_formatted <- inbreedR::convert_raw(genotypes, miss_val = NA)  
 heterozygosity <- inbreedR::sMLH(genotypes_formatted)
 ```
 
@@ -247,7 +252,8 @@ summary(lm(het_mum ~ num_comp_mum))
 ```
 
 Plotting is done with ggplot2, an implementation of the grammar of graphics [@ggplot2]
-```{r, echo = FALSE, fig.width=7, fig.height=5}
+
+```{r, echo = FALSE, fig.width=6, fig.height=5}
 het_df <- as.data.frame(cbind(het_mum, num_comp_mum))
 library(ggplot2)
 library(grid)
@@ -263,7 +269,7 @@ ggplot2::ggplot(het_df, aes(x=het_mum, y=num_comp_mum)) +
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
         scale_x_continuous(breaks=c(seq(from = 0.8, to = 1.20, by = 0.1))) +
         geom_text(aes(0.85,50, label="r = 0.34, p = 0.027"),size=4, colour = "blue") +
-        ggtitle("Correlation of sMLH and chemical complexity \nin Fur seal mothers")+
+        labs(title = "Correlation of sMLH and chemical complexity \nin Fur seal mothers")+
         xlab("sMLH") +
         ylab("number of compounds") 
 ```
@@ -323,7 +329,7 @@ results_mums <- sum_results(resample_mums)
 
 *Pups are not shown here for simplicity and to avoid code replication. For the full figure see the results section of the paper*
 
-```{r}
+```{r, fig.width=6, fig.height=5}
 # plotting
 library(grid)
 ggplot2::ggplot(results_mums, aes(x = locnum, y = cormean)) +
@@ -338,15 +344,15 @@ ggplot2::ggplot(results_mums, aes(x = locnum, y = cormean)) +
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
         #geom_hline(yintercept=0.305) +
-        ylab("r (sMLH, ncomp)") +
+        ylab("r (sMLH, ncomp) +- se") +
         xlab("number of loci") +
-        ggtitle("r between number of compounds and sMLH estimated \nfrom an increasing number of loci (mean +- se)")
+        labs(title = "r between number of compounds \nand sMLH estimated \nfrom an increasing number of loci")
 ```
 
 
 ## Estimation of identity disequilibrium g2 with the inbreedR package. (can diverge slightly from the RMES program)
 
-Instead to just finding a correlation between heterozygosity and a trait such as chemical complexity, ask whether variation in inbreeding (so called-general effects) is a potential cause. This can be measured with a parameter called g2 (David et. al), that assesses identity disequilibrium through quantification of excess double heterozygote loci. 
+Instead to just finding a correlation between heterozygosity and a trait such as chemical complexity, one can ask whether variation in inbreeding (so called-general effects) is a potential cause. This can be measured with a parameter called g2 [@david2007reliable], that assesses identity disequilibrium through quantification of excess double heterozygote loci. 
 We are currently working on the inbreedR package, which provides functions for calculation g2 with both microsatellites and SNPs.
 
 Calculate g2.
@@ -383,7 +389,7 @@ head(fa_scores)
 
 The eigenvalue course seen in the screeplot allows for decisions on the number of factors to retain.
 
-```{r}
+```{r, fig.width=6, fig.height=5}
 # screeplot, 4 factors left to the "scree"
 plot(scent_fa$values[1:8], type="b", ylab = "eigenvalue", xlab = "factor", 
      main = "Screeplot")
@@ -401,11 +407,10 @@ plot_all <- ggplot(df, aes_string(x = paste("F", i, sep = ""), fill = "colony"))
         geom_density(alpha=0.8, size=0.5, aes(fill = colony),adjust=1.5) +
         scale_fill_manual(values = c("blue","red")) +
         guides(fill=guide_legend(title=NULL)) +
-        theme_minimal(base_size = 20) + 
+        theme_minimal(base_size = 16) + 
         theme(legend.position="none") +
         scale_x_continuous(breaks = c(seq(from = -1, to = 6, by = 1))) + 
         scale_y_continuous(breaks = c(seq(from = 0, to = 1.4, by = 0.4))) +  
-        #scale_y_continuous(breaks = c(seq(from = 0, to = 1, by = 0.2))) +
         xlab(paste("Factor", i, sep = " ")) +
         ylab("Density")
 
@@ -416,8 +421,8 @@ assign(paste("f", i, "_plot", sep = ""), plot_all)
 source("multiplot.R")
 multiplot(f1_plot, f2_plot, f4_plot, cols = 2)
 ```
-
-Linear model of heterozygosity on factors (factor scores) as explanatory variables in mothers. 
+  
+**Linear model of heterozygosity on factors (factor scores) as explanatory variables in mothers.** 
 
 ```{r}
 # bind heterozygosity and the factor scores in one data.frame and subset mothers
@@ -455,7 +460,7 @@ table <- minmodelr::DelTestVar(as.data.frame(cbind(het_df$heterozygosity, het_df
 summary(lm(heterozygosity ~ F1F2, data = het_df))
 ```
 
-#### Linear model of genetic relatedness on factor scores as explanatory variables - mothers.
+#### Linear model of genetic relatedness on factor scores as explanatory variables for mothers.  
 
 Pairwise genetic relatedness is represented as a matrix. To model the relationship between relatedness and factor scores we created a matrix for each factor, whereby each pairwise value represents the difference in factor scores for a pair of seals.
 
@@ -463,6 +468,7 @@ Pairwise genetic relatedness is represented as a matrix. To model the relationsh
 
 Creation of 4 pairwise distance matrices for each factor.
 ```{r}
+source("get_pairdiff.R")
 fa_diff_mums <- get_pairdiff(relatedness[factors$age == 1, factors$age == 1],
                              fa_scores[factors$age == 1, ], df = F)
 
@@ -472,17 +478,19 @@ for (i in seq_along(1:4)) {
 }
 ```
 
-The ecodist package can handle multiple distance matrices by doing a partial mantel test. 
+The ecodist package [@ecodist] can handle multiple distance matrices by doing a partial mantel test. 
+
+*Every partial mantel test just tests for the association with the first response, while the other are permutated*
 
 ```{r}
 rel_dist <- as.dist(relatedness[factors$age == 1, factors$age == 1])
-ecodist::mantel(rel_dist ~ f1_diff + f2_diff + f3_diff + f4_diff, mrank = T, nperm = 1000) # tests for factor 1
-ecodist::mantel(rel_dist ~ f2_diff + f1_diff + f3_diff + f4_diff, mrank = T)               # tests for factor 2
-ecodist::mantel(rel_dist ~ f3_diff + f2_diff + f1_diff + f4_diff, mrank = T)               # tests for factor 3
-ecodist::mantel(rel_dist ~ f4_diff + f3_diff + f2_diff + f1_diff, mrank = T)               # tests for factor 4
+ecodist::mantel(rel_dist ~ f1_diff + f2_diff + f3_diff + f4_diff, mrank = T, nperm = 1000)
+ecodist::mantel(rel_dist ~ f2_diff + f1_diff + f3_diff + f4_diff, mrank = T)               
+ecodist::mantel(rel_dist ~ f3_diff + f2_diff + f1_diff + f4_diff, mrank = T)               
+ecodist::mantel(rel_dist ~ f4_diff + f3_diff + f2_diff + f1_diff, mrank = T)               
 ```
 
-#### Linear model for associations between genetic relatedness and factor scores as explanatory variables - Pups
+#### Linear model for associations between genetic relatedness and factor scores as explanatory variables for pups.
 ```{r}
 fa_diff_pups <- get_pairdiff(relatedness[factors$age == 2, factors$age == 2],
                              fa_scores[factors$age == 2, ], df = F)
@@ -492,39 +500,33 @@ for (i in seq_along(1:4)) {
 }
 
 rel_dist <- as.dist(relatedness[factors$age == 2, factors$age == 2])
-ecodist::mantel(rel_dist ~ f1_diff + f2_diff + f3_diff + f4_diff, mrank = T)                # tests for factor 1
-ecodist::mantel(rel_dist ~ f2_diff + f1_diff + f3_diff + f4_diff, mrank = T)                # tests for factor 2
-ecodist::mantel(rel_dist ~ f3_diff + f2_diff + f1_diff + f4_diff, mrank = T)                # tests for factor 3
-ecodist::mantel(rel_dist ~ f4_diff + f3_diff + f2_diff + f1_diff, mrank = T)                # tests for factor 4
+ecodist::mantel(rel_dist ~ f1_diff + f2_diff + f3_diff + f4_diff, mrank = T)               
+ecodist::mantel(rel_dist ~ f2_diff + f1_diff + f3_diff + f4_diff, mrank = T)           
+ecodist::mantel(rel_dist ~ f3_diff + f2_diff + f1_diff + f4_diff, mrank = T)                
+ecodist::mantel(rel_dist ~ f4_diff + f3_diff + f2_diff + f1_diff, mrank = T)              
 ```
 
 #### Colony differences in factor scores: Just factor 4 shows significant differences.
 ```{r}
-# create data frame
 col_df <- cbind(factors["colony"], fa_scores)
-# reduce model by deletion testing
 col_reduced <- minmodelr::MinMod(col_df)
 col_reduced_df <- col_reduced[[1]]
-# dev explained
-dev_expl <- (col_reduced_df$null.deviance - col_reduced_df$deviance) / col_reduced_df$null.deviance
-# deletion test single variable
+# dev_expl <- (col_reduced_df$null.deviance - col_reduced_df$deviance) / col_reduced_df$null.deviance
 table <- minmodelr::DelTestVar(col_reduced[[1]])
-table
 ```
-
 
 ## Identification of substance subsets.
 ```{r}
 # subsets and identification
 library(vegan)
 library(ggplot2)
-require(dplyr)
-require(magrittr)
+library(dplyr)
+library(magrittr)
 library(vegan)
 library(reshape2)
 ```
 
-Similarity percentages analysis (SIMPER) identifies the contribution of a specific compound to group similarity / dissimilarity. ANOSIM was used to test whether a small subset of the compounds with the highest contributions shows significant patterns.
+Similarity percentages analysis (`simper`) identifies the contribution of a specific compound to group similarity / dissimilarity. ANOSIM was used to test whether a small subset of the compounds with the highest contributions shows significant patterns.
 
 #### Identification of best substances encoding mother-offspring similarity. 
 For this analysis we have 41 groups (mother-offspring pairs) and want to look at withing group similarities rather then between group dissimilarities. This was done in Primer-E, as the `simper` function from the vegan package computes discriminating compounds, rather then compounds that make a mother-pup pair unique (although both sets overlap of course) .
@@ -535,17 +537,25 @@ mp_simp
 ```
 
 **Mother offspring similarity based on a Bray-curtis similarity matrix which was computed from just the subset of 12 top compounds from the SIMPER analysis is highly significant, both overall, as well as within colonies.**
+
+**Full sample**
+
 ```{r}
-# overall
 vegan::anosim(dat = scent[mp_simp$comp], grouping = factors$family, 
        distance = "bray", permutations = 1000)
+```
 
-# within colony 1 (Special study beach)
+**Within colony 1 (Special study beach)**
+
+```{r}
 vegan::anosim(dat = scent[factors$colony == 1, mp_simp$comp], 
        grouping = factors[factors$colony == 1, ]$family, 
        distance = "bray", permutations = 1000)
+```
 
-# within colony 2 (Freshwater beach)
+**Within colony 2 (Freshwater beach)**
+
+```{r}
 vegan::anosim(dat = scent[factors$colony == 2, mp_simp$comp], 
        grouping = factors[factors$colony == 2, ]$family, 
        distance = "bray", permutations = 1000)
@@ -555,7 +565,7 @@ vegan::anosim(dat = scent[factors$colony == 2, mp_simp$comp],
 
 Using `simper` from the `vegan` package to find the important substances for discriminating between the two colonies. And sorting them subsequently in order of contribution to colony dissimilarity.
 ```{r}
-# colony dissimilarity, best substances ----------------------------------------
+# simper analysis
 simp_colony <- vegan::simper(scent, factors$colony)
 
 # getting 15 best substances and their contribution to colony dissimilarity
@@ -672,22 +682,21 @@ results <- unlist(best)
 ############################## END #############################################
 ```
 
-*Analysing results from the BIO-ENV bootstrap analysis.*
+**Analysing results from the BIO-ENV bootstrap analysis.**
 
 `best_mums` is a data frame containing the number of occurences of each variable in the best subset from the BIO-ENV bootstrap analysis. Substances, that were retained more often are therefore likely to be genuinly associated with genetic relatedness.
 ```{r}
-# substance occurences are counted in sorted in a table
+# substance occurences are sorted in the table
 best_mums <- read.csv("files/bootstrap_mums.csv",row.names=1)
 ```
 
 To analyse how many of these compounds are really important, the idea is to take an increasing number of "best" compounds and compute a mantel test with relatedness for each of the subsets. The subsequent plot shows a nice peak, which could be seen as the optimal number of chemicals encoding relatedness.
 
-```{r}
-# subset
+```{r, warning=FALSE}
+# subset mothers
 scent_mum <- dplyr::filter(scent, factors$age == 1)
 relate_mum <-  1-relatedness[factors$age == 1, factors$age == 1]
 
-# get vectors of best substance names
 sub_names_mums <- row.names(best_mums)
 
 statm <- vector()
@@ -705,16 +714,16 @@ stat_df <- data.frame(num_comps = 1:length(statm), mantelR = statm)
 ```
 
 **Plotting mantelR for an increasing number of best substances.**
-```{r}
+```{r, fig.height=5, fig.width=6}
 library(grid)
 # simple plot
 ggplot2::ggplot(stat_df, aes(x = num_comps, y = mantelR)) +
         stat_smooth(se = FALSE, span = 0.16, size = 1.3, method = "loess") +
         geom_point(colour = "black", size = 3, alpha = 0.8) +
-        theme_minimal(base_size = 26) +
-        theme(strip.text.x = element_text(vjust=1,size = 18),
-              axis.title.x = element_text(vjust= -2 ,size = 28),
-              axis.title.y = element_text(vjust=3,size = 28),
+        theme_minimal(base_size = 16) +
+        theme(strip.text.x = element_text(vjust=1,size = 16),
+              axis.title.x = element_text(vjust= -2 ,size =16),
+              axis.title.y = element_text(vjust=3,size = 16),
               axis.ticks.x = element_blank(),
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
@@ -726,7 +735,7 @@ ggplot2::ggplot(stat_df, aes(x = num_comps, y = mantelR)) +
 
 The plot peaks at 10 substances. We now want to do a single mantel test for chemical bray-curtis similarities based on these 10 compounds and genetic relatedness. As already shown in the plot, the mantelR is 0.164 and is highly significant.
 
-```{r}
+```{r, warning=FALSE}
 # indices of the 10 best compounds associated with relatedness -----------------
 comp_ind_m <- c(36,52,86,88,96,103,110,203,206,207)
 

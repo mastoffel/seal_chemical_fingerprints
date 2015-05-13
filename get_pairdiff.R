@@ -61,7 +61,6 @@ for (z in 1:ncol(scores)) {
         factor_diff <- as.vector(as.matrix(score_mat))
         factor_diff <- factor_diff[!is.na(factor_diff)]
         fac_diff_all <- cbind(fac_diff_all, factor_diff)
-        
 }
 
 ## check argument for what to return
