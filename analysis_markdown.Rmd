@@ -7,15 +7,16 @@ output:
   html_document:
     highlight: pygments
   pdf_document: default
+bibliography: cites.bib
 ---
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning = FALSE
 ```
 
-This document provides the code for all major analysis from our paper. 
+This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. The Rmarkdown file as well as the data are stored on GitHub
 For any questions just contact me: martin.adam.stoffel@gmail.com
 
-We wrote two packages to simplify the analysis, which are both hosted on my  [GitHub repository](https://github.com/mastoffel/scent/tree/master/final_script). The inbreedR package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. The minmodelr package is a small package for finding minimal adequate models (Crawley) and formatting outputs, but it was mainly written for personal usage. To download packages from GitHub repositories, one needs to install the `devtools` package.  
+We a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on this  [GitHub repository](https://github.com/mastoffel/scent/tree/master/final_script). The inbreedR package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, one needs to install the `devtools` package.  
 
 Some functions have been outsourced. The raw data is in the files directory.
 
@@ -23,13 +24,10 @@ Some functions have been outsourced. The raw data is in the files directory.
 # install.packages("devtools")
 library(devtools)
 # install_github("mastoffel/inbreedR")
-# install_github("mastoffel/minmodelr")
 library(inbreedR)
-library(minmodelr)
 ```
 
-See `?inbreedR` and `?minmodelr` for further information on the functions. We will
-use them thoughout this documentation.
+See `?inbreedR` for further information on the functions. 
 
 ***
 ### Loading data, standardisation and transformation
@@ -86,7 +84,7 @@ scent_mds <- MASS::isoMDS(vegdist(scent))
 vegan::ordiplot(scent_mds, type = "t", ylab = "", xlab = "",axes=FALSE, frame.plot=TRUE)
 ```
 
-Analysis of Similarities (ANOSIM) is a non-parametric test for group differences based on a Bray-curtis (or any other) similarity matrix. Most analysis are done for the whole sample as well as for mothers and pups seperately to avoid pseudoreplication. ANOSIM is based on a permutation test, which is why results can slightly differ from the paper.
+Analysis of Similarities (ANOSIM) is a non-parametric test for group differences based on a Bray-curtis (or any other) similarity matrix. We use the vegan package [@vegan] for ANOSIM and several other functions. Most analysis are done for the whole sample as well as for mothers and pups seperately to avoid pseudoreplication. ANOSIM is based on a permutation test, which is why results can slightly differ from the paper.
 
 **Dissimilarity between the two colonies.**
 ```{r, cache=TRUE}
@@ -106,7 +104,7 @@ vegan::anosim(dat = scent[factors$age == 2, ], grouping = factors$colony,
        distance = "bray", permutations = 1000)
 ```
 
-*Genetic differentiation of the two colonies was assesed through the software "Structure" (Pritchard, Stephens & Donnelly (2000))*  
+*Genetic differentiation of the two colonies was assesed through the software "Structure" [@Pritchard:2000uv]*  
 
 ***
 ### Mother offspring similarity in chemical fingerprints. 
@@ -177,7 +175,7 @@ vegan::mantel(geo_pup, scent_pup, method = "spearman")
 
 #### Relatedness and overall chemical similarity
 
-Load pairwise relatedness (Queller&Goodnight, 1989) based on 41 microsatellite markers.
+Load pairwise relatedness [@Queller:1989wl] based on 41 microsatellite markers.
 ```{r}
 relatedness <- as.matrix(read.csv(".\\files\\relatedness.csv",row.names=1))
 head(relatedness[1:6, 1:6])
@@ -248,6 +246,7 @@ num_comp_mum <- num_comp[factors$age==1]
 summary(lm(het_mum ~ num_comp_mum))
 ```
 
+Plotting is done with ggplot2, an implementation of the grammar of graphics [@ggplot2]
 ```{r, echo = FALSE, fig.width=7, fig.height=5}
 het_df <- as.data.frame(cbind(het_mum, num_comp_mum))
 library(ggplot2)
@@ -347,7 +346,7 @@ ggplot2::ggplot(results_mums, aes(x = locnum, y = cormean)) +
 
 ## Estimation of identity disequilibrium g2 with the inbreedR package. (can diverge slightly from the RMES program)
 
-Instead to just finding a correlation between heterozygosity and a trait such as chemical complexity, it is useful to embed it into a context and asking whether variation in inbreeding (so called-general effects) are a potential cause. This can be measured with a parameter called g2 (David et. al), that assesses a potential identity disequilibrium through quantification of excess double heterozygote loci. 
+Instead to just finding a correlation between heterozygosity and a trait such as chemical complexity, ask whether variation in inbreeding (so called-general effects) is a potential cause. This can be measured with a parameter called g2 (David et. al), that assesses identity disequilibrium through quantification of excess double heterozygote loci. 
 We are currently working on the inbreedR package, which provides functions for calculation g2 with both microsatellites and SNPs.
 
 Calculate g2.
@@ -364,24 +363,26 @@ g2
 
 ## Factor analysis on the chemical compounds data with the package HDMD.
 
-HDMD allows for doing a Factor analysis with high dimensional data, where more variables than observations are present by calculating a general inverse matrix. 
+HDMD [@HDMD] allows for doing a Factor analysis with high dimensional data(where the number of variables exceeds the number of observations) by calculating a general inverse matrix. 
 ```{r}
 library(HDMD)
 library(minmodelr)
 source("get_pairdiff.R") 
 ```
 
-Factor analysis and extraction of factor scores for the first 4 factors. Promax rotation of the factors allows them to be non-orthogonal and thus correlated. 
+Factor analysis and extraction of factor scores for the first 4 factors. Promax rotation of the factors allows them to be non-orthogonal and thus correlated. After FA, the factor scores for each individual on all 4 factors are extracted.
 
 ```{r}
 # factor analysis with 4 factors, promax rotation ------------------------------
-scent_fa <- factor.pa.ginv(scent, nfactors = 4, 
+scent_fa <- HDMD::factor.pa.ginv(scent, nfactors = 4, 
                            prerotate = T,rotate = "promax", 
                            scores = T, m = 3)
 fa_scores <- as.data.frame(scent_fa$scores)
+head(fa_scores)
 ```
 
 The eigenvalue course seen in the screeplot allows for decisions on the number of factors to retain.
+
 ```{r}
 # screeplot, 4 factors left to the "scree"
 plot(scent_fa$values[1:8], type="b", ylab = "eigenvalue", xlab = "factor", 
@@ -396,7 +397,7 @@ df <- cbind(fa_scores, factors["colony"])
 df$colony <- as.factor(df$colony)
 
 for (i in c(1,2,4)) {
-plot <- ggplot(df, aes_string(x = paste("F", i, sep = ""), fill = "colony")) +
+plot_all <- ggplot(df, aes_string(x = paste("F", i, sep = ""), fill = "colony")) +
         geom_density(alpha=0.8, size=0.5, aes(fill = colony),adjust=1.5) +
         scale_fill_manual(values = c("blue","red")) +
         guides(fill=guide_legend(title=NULL)) +
@@ -408,7 +409,7 @@ plot <- ggplot(df, aes_string(x = paste("F", i, sep = ""), fill = "colony")) +
         xlab(paste("Factor", i, sep = " ")) +
         ylab("Density")
 
-assign(paste("f", i, "_plot", sep = ""), plot)
+assign(paste("f", i, "_plot", sep = ""), plot_all)
 }
 
 # using multiplot function from cookbook-r.com for plotting multiple ggplots
@@ -416,7 +417,7 @@ source("multiplot.R")
 multiplot(f1_plot, f2_plot, f4_plot, cols = 2)
 ```
 
-Linear model for associations between heterozygosity and factor scores as explanatory variables in mothers. 
+Linear model of heterozygosity on factors (factor scores) as explanatory variables in mothers. 
 
 ```{r}
 # bind heterozygosity and the factor scores in one data.frame and subset mothers
@@ -425,33 +426,39 @@ het_model <- lm(heterozygosity ~., data=het_df)
 summary(het_model)
 ```
 
-Model simplification via deletion testing (Crawley, Statistics). The minmodelr package contains some helper functions for this task. See ?MinMod, ?DelTestVar
+While Factor1 and Factor2 seem to represent substances that are accociated with heterozygosity, Factor 3 and Factor 4 clearly don´t. To simplify the model we used deletion testing (Crawley, Statistics). The minmodelr package contains some helper functions for this task. See ?MinMod, ?DelTestVar. *We don´t generally recommend a deletion testing procedure. In our case, results are clear and we use it for simplicity rather than for fishing significant results.*
 
 ```{r}
-het_reduced <- MinMod(het_df)
+library(devtools)
+# install_github("mastoffel/minmodelr")
+library(minmodelr)
+```
+
+```{r}
+het_reduced <- minmodelr::MinMod(het_df)
 # extract data frame
 het_reduced_df <- het_reduced[[1]]
 # extract reduced model
 het_reduced_mod <- het_reduced[[2]]
 # deletion testing for both variables in the reduced model. See ?DelTestVar
-table <- DelTestVar(het_reduced_df)
+table <- minmodelr::DelTestVar(het_reduced_df)
 # deviance explained by the reduced model
 dev_expl <- (het_reduced_mod$null.deviance - het_reduced_mod$deviance) / het_reduced_mod$null.deviance
-
 summary(het_reduced_mod)
 ```
   
-Creating a new variable F1F2 which is the sum of the two factor scores and using this variable as predictor in a linear model.  
+Creating a new variable F1F2 which is the sum of the two factor scores and using this variable as predictor in a linear model of heterozygosity.
 ```{r}
 # sum of factors as variable
 het_df$F1F2 <- het_df$F1 + het_df$F2
-table <- DelTestVar(as.data.frame(cbind(het_df$heterozygosity, het_df$F1F2)))
+table <- minmodelr::DelTestVar(as.data.frame(cbind(het_df$heterozygosity, het_df$F1F2)))
 summary(lm(heterozygosity ~ F1F2, data = het_df))
 ```
 
-#### Linear model for associations between genetic relatedness and factor scores as explanatory variables - Mothers
+#### Linear model of genetic relatedness on factor scores as explanatory variables - mothers.
 
 Pairwise genetic relatedness is represented as a matrix. To model the relationship between relatedness and factor scores we created a matrix for each factor, whereby each pairwise value represents the difference in factor scores for a pair of seals.
+
 `get_pairdiff()` creates these matrices. We based these analysis on mothers and pups seperately.
 
 Creation of 4 pairwise distance matrices for each factor.
@@ -496,12 +503,13 @@ ecodist::mantel(rel_dist ~ f4_diff + f3_diff + f2_diff + f1_diff, mrank = T)    
 # create data frame
 col_df <- cbind(factors["colony"], fa_scores)
 # reduce model by deletion testing
-col_reduced <- MinMod(col_df)
+col_reduced <- minmodelr::MinMod(col_df)
 col_reduced_df <- col_reduced[[1]]
 # dev explained
 dev_expl <- (col_reduced_df$null.deviance - col_reduced_df$deviance) / col_reduced_df$null.deviance
 # deletion test single variable
-table <- DelTestVar(col_reduced[[1]])
+table <- minmodelr::DelTestVar(col_reduced[[1]])
+table
 ```
 
 
@@ -518,13 +526,16 @@ library(reshape2)
 
 Similarity percentages analysis (SIMPER) identifies the contribution of a specific compound to group similarity / dissimilarity. ANOSIM was used to test whether a small subset of the compounds with the highest contributions shows significant patterns.
 
-Identification of best substances encoding mother-offspring similarity.
+#### Identification of best substances encoding mother-offspring similarity. 
+For this analysis we have 41 groups (mother-offspring pairs) and want to look at withing group similarities rather then between group dissimilarities. This was done in Primer-E, as the `simper` function from the vegan package computes discriminating compounds, rather then compounds that make a mother-pup pair unique (although both sets overlap of course) .
 ```{r}
 # results from simper analysis in Primer-E
 mp_simp <- read.csv(".\\files\\simper_mp_results.csv", colClasses = c("character", "numeric"))
+mp_simp
+```
 
-# mother offspring similarity
-
+**Mother offspring similarity based on a Bray-curtis similarity matrix which was computed from just the subset of 12 top compounds from the SIMPER analysis is highly significant, both overall, as well as within colonies.**
+```{r}
 # overall
 vegan::anosim(dat = scent[mp_simp$comp], grouping = factors$family, 
        distance = "bray", permutations = 1000)
@@ -540,7 +551,9 @@ vegan::anosim(dat = scent[factors$colony == 2, mp_simp$comp],
        distance = "bray", permutations = 1000)
 ```
 
-Identification of best substances encoding colony dissimilarity.
+#### Identification of best substances encoding colony dissimilarity.
+
+Using `simper` from the `vegan` package to find the important substances for discriminating between the two colonies. And sorting them subsequently in order of contribution to colony dissimilarity.
 ```{r}
 # colony dissimilarity, best substances ----------------------------------------
 simp_colony <- vegan::simper(scent, factors$colony)
@@ -555,13 +568,22 @@ ind_col <- paste(which(names(scent)%in%simp_colony_names), collapse = ",")
 # connect to data frame and compute contribution in percent
 col_simp <- data.frame(comp = simp_colony_names, contrib = contribution*100, stringsAsFactors = FALSE)
 col_simp
+```
 
+**Colony dissimilarity based on 15 compounds.**
+```{r}
 # overall (number of permutations is 1000 instead of 10,000 in the paper)
 anosim(dat = scent[col_simp$comp], grouping = factors$colony, 
        distance = "bray", permutations = 1000)
 ```
 
-#### Identification of substanced encoding relatedness.
+## Identification of substanced encoding relatedness.
+All the following analyses are shown for the subset of mothers. 
+
+The core of the idea is to use a bootstrapping procedure on the `BIO-ENV` function, originally by Clarke [@clarke2001primer], which was modified [@sinkr] to work with a bray curtis similarity matrix. For details see the methods part of the paper. The function is built to run on parallel with snowfall [@snowfall] on a server or similar, but still takes a couple of days to finish.
+
+Additional packages used are Hadley Wickham´s dplyr [@dplyr] and stringr [@stringr].
+
 
 ```{r, eval = FALSE}
 ################ BIO-ENV bootstrap procedure ###################################
@@ -592,23 +614,21 @@ relate_mum <-  relatedness[factors$age == 1, factors$age == 1]
 all_best <- vector()
 
 # initialise cluster
-sfInit(parallel=TRUE, cpus=ncores, type="SOCK")
+snowfall::sfInit(parallel=TRUE, cpus=ncores, type="SOCK")
 
 # export libraries and main function to all cores
-sfSource("bio.env.R")
-sfLibrary(vegan)
-sfLibrary(stringr)
-sfLibrary(dplyr)
+snowfall::sfSource("bio.env.R")
+snowfall::sfLibrary(vegan)
+snowfall::sfLibrary(stringr)
+snowfall::sfLibrary(dplyr)
 
 bootstrap <- function(iter_comp) { # main resampling function
-        
         for (i in 1:500) {
                 # sample 20 out of 41 mothers, indices
                 ind_obs <- sort(sample(1:41, size = 20, replace = F))
                 # subset relate_mum and scent_mum
                 reltemp <- 1-as.dist(relate_mum[ind_obs, ind_obs])
                 abundtemp <- scent_mum[ind_obs, ]
-                
                 for (i in iter_comp) {
                         # sample 10 compounds
                         index_comps <- sort(sample(1:213, size = 10, replace = F))
@@ -620,13 +640,11 @@ bootstrap <- function(iter_comp) { # main resampling function
                                                 select = (nullcomps >= 2))
                         # new iteration if too less substances left
                         if (ncol(abundtemp_sub) <= 2) next
-                        
                         # main function: bio.env finds subset that mostly correlates
                         # with relatedness
                         results <- bio.env(reltemp, abundtemp_sub, 
                                            var.dist.method = "bray", 
                                            scale.fix = F, scale.var = F)
-                        
                         mods <- results$best.model.vars
                         best <- unlist(str_split(mods, ","))
                         all_best <- append(all_best, best)
@@ -636,9 +654,8 @@ bootstrap <- function(iter_comp) { # main resampling function
         return(all_best)
 }
 # export objects
-sfExportAll(except = NULL, debug = FALSE)
-sfClusterEval(ls())
-
+snowfall::sfExportAll(except = NULL, debug = FALSE)
+snowfall::sfClusterEval(ls())
 # create list of 500 iterations for all cores
 vals <- list()
 for (i in 1:ncores) {
@@ -646,7 +663,7 @@ for (i in 1:ncores) {
 }
 # run analysis
 # best is a list of all best subsets
-best <- sfLapply(vals, bootstrap)
+best <- snowfall::sfLapply(vals, bootstrap)
 # stop cluster
 sfStop()
 # bring all results 
@@ -655,12 +672,17 @@ results <- unlist(best)
 ############################## END #############################################
 ```
 
-Analysing results from the BIO-ENV bootstrap analysis.
-```{r, cache = TRUE}
+*Analysing results from the BIO-ENV bootstrap analysis.*
 
+`best_mums` is a data frame containing the number of occurences of each variable in the best subset from the BIO-ENV bootstrap analysis. Substances, that were retained more often are therefore likely to be genuinly associated with genetic relatedness.
+```{r}
 # substance occurences are counted in sorted in a table
 best_mums <- read.csv("files/bootstrap_mums.csv",row.names=1)
+```
 
+To analyse how many of these compounds are really important, the idea is to take an increasing number of "best" compounds and compute a mantel test with relatedness for each of the subsets. The subsequent plot shows a nice peak, which could be seen as the optimal number of chemicals encoding relatedness.
+
+```{r}
 # subset
 scent_mum <- dplyr::filter(scent, factors$age == 1)
 relate_mum <-  1-relatedness[factors$age == 1, factors$age == 1]
@@ -682,13 +704,13 @@ for (i in 2:100) {
 stat_df <- data.frame(num_comps = 1:length(statm), mantelR = statm)
 ```
 
-Plotting results.
+**Plotting mantelR for an increasing number of best substances.**
 ```{r}
 library(grid)
 # simple plot
-ggplot(stat_df, aes(x = num_comps, y = mantelR)) +
-        stat_smooth(se = FALSE, span = 0.11, size = 1.5, method = "loess") +
-        geom_point(colour = "black", size = 3, alpha = 0.4) +
+ggplot2::ggplot(stat_df, aes(x = num_comps, y = mantelR)) +
+        stat_smooth(se = FALSE, span = 0.16, size = 1.3, method = "loess") +
+        geom_point(colour = "black", size = 3, alpha = 0.8) +
         theme_minimal(base_size = 26) +
         theme(strip.text.x = element_text(vjust=1,size = 18),
               axis.title.x = element_text(vjust= -2 ,size = 28),
@@ -702,7 +724,8 @@ ggplot(stat_df, aes(x = num_comps, y = mantelR)) +
         ylab("mantelR") 
 ```
 
-Check whether scent similarity at the most important compounds is associated with genetic relatedness.
+The plot peaks at 10 substances. We now want to do a single mantel test for chemical bray-curtis similarities based on these 10 compounds and genetic relatedness. As already shown in the plot, the mantelR is 0.164 and is highly significant.
+
 ```{r}
 # indices of the 10 best compounds associated with relatedness -----------------
 comp_ind_m <- c(36,52,86,88,96,103,110,203,206,207)
