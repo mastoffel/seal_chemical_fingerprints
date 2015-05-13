@@ -82,7 +82,7 @@ vegan::anosim(dat = scent[factors$colony == 2, ],
        distance = "bray", permutations = 1000)
 
 # olfactory similarity vs. geographic distance on special study beach ----------
-coord  <- read.csv("coordinates_beach1.csv", row.names=1) 
+coord  <- read.csv(".\\files\\coordinates_beach1.csv", row.names=1) 
 
 # converting coordinates to a pairwise euclidian distance matrix
 dist_mat <- as.matrix(dist(coord, method = "euclidian"))
@@ -151,9 +151,10 @@ table <- DelTestVar(het_pup_df)
 
 # resampling plot  -------------------------------------------------------------
 
-# load heterozygosity package
+# heterozygosity package
+library(Rhh)
 
-# load modified function that works in workspace 
+# loading genotype data
 genotypes <- read.table(".\\files\\genotypes.txt", row.names = 1)
 
 # probably put that function in a seperate package
@@ -190,7 +191,7 @@ results
 }
 
 # resampling with just 10 iterations instead of 1000 for computational purpose
-resample_mums <- resample_loci(genotypes, num_comp_mum, num_iter = 10, subset_rows = 1:41)
+resample_mums <- resample_loci(genotypes, num_comp_mum, num_iter = 1000, subset_rows = 1:41)
 
 # summarising results: mean and se for the heterozygosity - number of compounds
 # correlation, while heterozygosity is estimated by an increasing number of loci

@@ -1,0 +1,317 @@
+---
+title: Fur seal odour encodes colony membership, mother-offspring similarity, relatedness
+  and genetic quality
+author: Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart-Phillips,
+  L.J. , Müller, C. & Hoffman, J.I.
+output:
+  html_document:
+    highlight: pygments
+  pdf_document: default
+---
+!!!This file is under developement!!! and will soon contain all major analyses.
+
+This documentation explains the main analyses from our paper and provides the
+accompanying code sections as well as figures. The complete code can be found
+[in this github repository](https://github.com/mastoffel/scent/tree/master/final_script).
+We wrote two small R packages for our analysis. You can directly download them 
+from github with the devtools package:
+
+```{r, results="hide", message=FALSE}
+library(devtools)
+# install_github("mastoffel/minmodelr")
+# install_github("mastoffel/g2")
+library(minmodelr)
+library(g2)
+```
+
+See ?MinMod, ?DelTestVar, ?g2 for further information on the functions. We will
+use them thoughout this documentation.
+
+
+***
+### Loading data, standardisation and transformation
+
+Loading the raw scent data (aligned by algorithm) and a factor data frame containing identities
+for colony membership (colony), mother-offspring pairs (family) and mothers
+and pups, respectively (age)
+
+```{r}
+scent_raw <- as.data.frame(t(read.csv(".\\files\\scent_raw.csv", row.names = 1)))
+factors <- read.csv(".\\files\\factors.csv",row.names=1) 
+head(factors)
+```
+
+Standardising observations by total, such that within every observation compounds
+add up to 100 % (Thus averaging out absolute concentration differences between samples)
+
+```{r}
+scent_stand <- as.data.frame(t(apply(scent_raw, 1, function(x) (x/sum(x)) * 100)))
+```
+
+Log(x+1) transformation of the standardised scent data.
+```{r}
+scent <- log(scent_stand + 1)
+```
+
+The scent matrix contains 82 observations and 213 compounds (retention times are column names) in total.
+```{r}
+dim(scent)
+head(scent[1:6])
+```
+
+***
+### Differences in olfactory fingerprints between the two colonies
+
+```{r, results="hide", message=FALSE}
+library(vegan)
+library(MASS)
+```  
+    
+**Non-metric multidimensional scaling (nMDS)** visualizes a distance matrix (Bray-Curtis similarity).
+The nMDS algorithm aims to place each individual in a 2-dimensional space such that the
+between-individual distances are preserved as well as possible. Axis coordinates are 
+arbitrary and not shown. The plot is better visualized with colours (see paper) and
+is shown here for the purpose of demonstration. Mother-offspring pairs can be
+identified by labels (e.g. M14, P14)
+```{r, fig.height=5, fig.width=5, warning = FALSE}
+scent_mds <- isoMDS(vegdist(scent))
+ordiplot(scent_mds, type = "t", ylab = "", xlab = "",axes=FALSE, frame.plot=TRUE)
+```
+
+
+**Analysis of Similarities (ANOSIM)** is a distribution-free test for group differences
+based on a Bray-curtis similarity matrix. Here is an example which tests for a
+significant difference between the two colonies. ANOSIM is philosphically connected
+to nMDS as it also uses only the rank order of dissimilarity values.
+
+*ANOSIM - Dissimilarity between the two colonies.*
+```{r, cache=TRUE}
+anosim(dat = scent, grouping = factors$colony, 
+       distance = "bray", permutations = 1000)
+```
+* The two colonies are highly dissimilar in their olfactory fingerprints.
+
+**Genetic differentiation between the colonies was tested with Structure (Bayesian structure analysis)**  
+
+***
+### Mother-offspring similarity
+
+**ANOSIM** can also be used to test for differences between mother-offspring pairs,
+basically asking the question if mother-offspring pairs have their own scent "identity".
+For computational reasons, the following examples use 1000 permutations while we 
+used 10000 for the article.
+
+**Overall**
+```{r, cache=TRUE}
+anosim(dat = scent, grouping = factors$family, 
+       distance = "bray", permutations = 1000)
+```
+
+**Within colony 1 (Special study beach)**
+```{r, cache=TRUE}
+
+anosim(dat = scent[factors$colony == 1, ], 
+       grouping = factors[factors$colony == 1, ]$family, 
+       distance = "bray", permutations = 1000)
+```
+**Within colony 2 (Freshwater beach)**
+```{r, cache=TRUE}
+anosim(dat = scent[factors$colony == 2, ], 
+       grouping = factors[factors$colony == 2, ]$family, 
+       distance = "bray", permutations = 1000)
+```
+ 
+* Mother-offspring pairs are highly similar in their olfactory fingerprints,
+both overall as well as within each colony.
+
+***
+### Olfactory similarity vs. geographic distance on special study beach
+  
+For the special study beach, exact data of the geographical positions is available. 
+If mother-offspring similarity would just be caused by spatial proxomity, one would
+assume a correlation between geographic distance and olfactory similarity, which is
+not the case.
+```{r}
+coord  <- read.csv(".\\files\\coordinates_beach1.csv", row.names=1) 
+```
+
+Converting coordinates to pairwise euclidian distance matrix
+```{r}
+dist_mat <- as.matrix(dist(coord, method = "euclidian"))
+```
+
+Constructing bray curtis similarity matrix of all individuals from beach 1
+```{r}
+scent_bc <- as.matrix(vegdist(as.matrix(scent[factors$colony == 1, ])),
+                      method = "bray")
+```
+
+**Geographic distance vs. olfactory similarity in mothers**
+```{r}
+geo_mum <- dist_mat[1:20, 1:20]
+scent_mum <- scent_bc[1:20, 1:20]
+vegan::mantel(geo_mum, scent_mum, method = "spearman")
+```
+
+**Geographic distance vs. olfactory similarity in pups**
+```{r}
+geo_pup <- dist_mat[21:40, 21:40]
+scent_pup <- scent_bc[21:40, 21:40]
+vegan::mantel(geo_pup, scent_pup, method = "spearman")
+```
+
+***
+## Relatedness and overall olfactory similarity
+
+Due to the olfactory similarity of mothers and their pups, there is the risk
+of pseudoreplication for all following analyses. We thus splitted mothers and
+pups and analysed them seperately. As we did not find any relationship between
+genetic characteristics and scent profiles in pups, the following analysis will
+just show the analysis for mother for simplicity and readability.
+
+1. Loading pairwise relatedness based on 41 markers
+```{r}
+relatedness <- as.matrix(read.csv(".\\files\\relatedness.csv",row.names=1))
+```
+
+2. Computing pairwise bray-curtis similarity. 
+```{r}
+scent_bc <- 1-(as.matrix(vegdist(as.matrix(scent)), method = "bray"))
+```
+
+3. **Mantel test between relatedness and bray curtis similarity in mothers** 
+```{r}
+vegan::mantel(relatedness[factors$age == 1, factors$age == 1], 
+              scent_bc[factors$age == 1, factors$age == 1],
+              method = "spearman", permutation = 1000)
+```
+* No relationship between olfactory similarity (based on the overall fingerprint)
+and genetic relatedness.
+
+***
+## Correlation between Heterozygosity and number of compounds in odour profiles
+
+1. Loading standardised multilocus heterozygosity (sMLH) based on 41 markers
+```{r}
+heterozygosity <- as.matrix(read.csv(".\\files\\heterozygosity.csv", row.names=1))
+```
+
+2. Average number of compounds per individual
+```{r}
+num_comp <- as.vector(apply(scent, 1, function(x) length(x[x>0])))
+```
+
+3. Correlation between Heterozygosity and number of compounds in mothers
+```{r}
+het_mum <- heterozygosity[factors$age == 1]
+num_comp_mum <- num_comp[factors$age==1]
+summary(glm(het_mum ~ num_comp_mum))
+```
+
+```{r, echo = FALSE, fig.width=6, fig.height=4}
+het_df <- as.data.frame(cbind(het_mum, num_comp_mum))
+library(ggplot2)
+library(grid)
+ggplot(het_df, aes(x=het_mum, y=num_comp_mum)) +
+        geom_point(colour = "black", size = 2.5) +
+        geom_smooth(method="lm",size = 1 ,alpha=0.13, colour="black", fill = "lightblue") +
+        theme_minimal(base_size = 18) +
+        theme(strip.text.x = element_text(vjust=1,size = 18),
+              axis.title.x = element_text(vjust= -2 ,size = 18),
+              axis.title.y = element_text(vjust=3,size = 18),
+              axis.ticks.x = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
+        scale_x_continuous(breaks=c(seq(from = 0.8, to = 1.20, by = 0.1))) +
+        #geom_text(aes(0.85,80, label="(a) r = 0.34, p = 0.027"),size=4) +
+        xlab("multilocus heterozygosity") +
+        ylab("number of compounds") 
+```
+
+## Effect of the number of genetic markers on the correlation between heterozygosity
+and olfactory fingerprint complexity
+
+For this study, we used an unusually high number of genetic markers to reliably
+estimate heterozygosity and relatedness. We wanted to see how the correlation with 
+number of compounds in a scent profile develops with heterozygosity being estimated from an
+increasing number of markers. A constant increase also suggests the correlation
+to reflect a global rather than a local effect. 
+
+1. Loading genotype data and showing the first 3 loci.
+```{r}
+library(Rhh)
+genotypes <- read.table(".\\files\\genotypes.txt", row.names = 1)
+head(genotypes)[1:6]
+```
+
+2. Genetic-marker resampling function. 
+* genotypes is the genotype data
+* y is a vector containing the number of compounds the olfactory fingerprints
+* num_iter specifies how often a given set of markers should be randomly sampled
+and correlation with heterozygosity computed
+* subset_rows subsets mothers after computing heterozygosity from the entire data
+```{r}
+resample_loci <- function(genotypes, y, num_iter = 1000, subset_rows = 1:41) {
+        y <- y[subset_rows]
+        num_loci <- ncol(genotypes)/2
+        results <- data.frame(matrix(nrow = num_iter, ncol = num_loci))
+        ind <- seq(from = 1, to = ncol(genotypes) - 1, by = 2)
+        for (i in seq(from = 1, to = num_loci)) {
+                for (k in seq_along(1:num_iter)) {
+                        loci_ind <- as.list(sample(ind, i, replace = FALSE))
+                        gen_sub <- lapply(loci_ind, function(x) genotypes[x:(x+1)])
+                        gen_sub <- do.call("cbind", gen_sub)
+                        het <- Rhh::sh(gen_sub)[subset_rows, ]
+                        results[k, i] <- cor(het,y)
+                }
+        }   
+        results
+        }
+```
+
+3. Resampling with just 100 iterations instead of 1000 for computational purpose
+```{rm, cache=TRUE}
+resample_mums <- resample_loci(genotypes, num_comp_mum, num_iter = 10000, subset_rows = 1:41)
+```
+
+4. Summing up the results and get mean and se for each marker number
+```{r}
+sum_results <- function(resampling_output) {
+        mean.cor <- apply(resampling_output,2,mean, na.rm=T)
+        sd.cor <- apply(resampling_output,2,sd, na.rm=T)
+        se.cor <- sd.cor/(sqrt(sd.cor))
+        sum_results <- data.frame(locnum = 1:ncol(resampling_output), 
+                                  cormean = mean.cor, corsd = sd.cor, corse = se.cor)
+}
+results_mums <- sum_results(resample_mums)
+```
+
+5. Plotting results
+```{r, echo=FALSE,  fig.width=6, fig.height=4}
+ggplot(results_mums, aes(x = locnum, y = cormean)) +
+        geom_errorbar(aes(ymin = cormean-corse, ymax = cormean+corse),
+                      width=0.8, alpha=0.7, size = 0.8) +
+        geom_point(size = 3, shape = 16) +
+        geom_line(size = 0.8) +
+        theme_minimal(base_size = 16) +
+        theme(axis.title.x = element_text(vjust= -2 ,size = 16),
+              axis.title.y = element_text(vjust=3,size = 16),
+              axis.ticks.x = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
+        #geom_hline(yintercept=0.305) +
+        ylab(expression(r [mean+-se])) +
+        xlab("number of loci") +
+        ggtitle("Correlation between olfactory complexity and heterozygosity \nestimated by for an increasing number of loci")
+```        
+
+## Estimation of second-order heterozygosity disequilibrium with increasing number
+of genetic markers
+
+
+
+
+***resampling plot missing***  
+***g2 and plot missing***
+
+

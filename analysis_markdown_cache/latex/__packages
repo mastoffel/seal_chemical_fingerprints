@@ -4,3 +4,11 @@ lattice
 MASS
 permute
 vegan
+inbreedR
+minmodelr
+ggplot2
+psych
+HDMD
+dplyr
+magrittr
+reshape2

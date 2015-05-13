@@ -13,7 +13,7 @@ library(reshape2)
 # two most important compounds defining the similarity for each mother offspring
 # pair and their average contribution over all pairs
 
-mp_simp <- read.csv("simper_mp_results.csv", colClasses = c("character", "numeric"))
+mp_simp <- read.csv(".\\files\\simper_mp_results.csv", colClasses = c("character", "numeric"))
 
 # mother offspring similarity
 
@@ -38,6 +38,9 @@ simp_colony <- simper(scent, factors$colony)
 # getting 15 best substances and their contribution to colony dissimilarity
 simp_colony_names <- rownames(summary(simp_colony, ordered = TRUE)[[1]])[1:15]
 contribution <- summary(simp_colony, ordered = TRUE)[[1]]$contr[1:15]
+
+# indices of colony substances (58,62,68,74,86,89,90,98,106,107,110,164,181,189,211)
+ind_col <- paste(which(names(scent)%in%simp_colony_names), collapse = ",")
 
 # connect to data frame and compute contribution in percent
 col_simp <- data.frame(comp = simp_colony_names, contrib = contribution*100, stringsAsFactors = FALSE)
