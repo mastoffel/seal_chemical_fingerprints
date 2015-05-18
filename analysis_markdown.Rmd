@@ -1,5 +1,5 @@
 ---
-title: R-code for "Chemical fingerprints encode colony membership, mother-offspring similarity,
+title: R-code for "Chemical signatures encode colony membership, mother-offspring similarity,
   relatedness and genetic quality in Fur seals""
 author: Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart-Phillips,
   L.J. , Müller, C. & Hoffman, J.I.
