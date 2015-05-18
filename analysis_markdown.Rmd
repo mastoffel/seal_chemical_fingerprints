@@ -1,6 +1,6 @@
 ---
-title: R-code containing all analyses from our manuscript "Fur seal chemical fingerprints encode colony membership, mother-offspring similarity,
-  relatedness and genetic quality""
+title: R-code for "Chemical fingerprints encode colony membership, mother-offspring similarity,
+  relatedness and genetic quality in Fur seals""
 author: Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart-Phillips,
   L.J. , Müller, C. & Hoffman, J.I.
 output:
@@ -13,15 +13,17 @@ bibliography: cites.bib
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning = FALSE
 ```
 
-R version and platform.
-```{r}
-sessionInfo()
-```
-
-This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. All supplemented data files should be put in a subfolder called "files" for correct loading and functionality of the code.
+This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. All supplemented data files should be placed in a subfolder called "files" for correct loading and functionality of the code.
 The Rmarkdown file as well as the data are stored on GitHub. For any questions just contact me: `martin.adam.stoffel@gmail.com`
+The sequence of code follows roughly the sequence of analysis in the *Results* section of the paper.
 
-We wrote a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on GitHub. The `inbreedR` package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, you need to install the `devtools` package. 
+**Prerequisites:**
+
+* We wrote a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on GitHub. The `inbreedR` package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, you need to install the `devtools` package. 
+* For running the complete code you need  a `files` subfolder with all the raw data files.
+
+
+Installing `inbreedR` from GitHub.
 
 ```{r, eval = FALSE}
 # install.packages("devtools")
@@ -29,10 +31,7 @@ library(devtools)
 install_github("mastoffel/inbreedR")
 ```
 
-For running the complete code you need  a `files` subfolder with all the raw data files.
-
 ```{r, results="hide", message=FALSE, cache = TRUE}
-# install.packages("devtools")
 library(devtools)
 library(inbreedR)
 ```
@@ -40,14 +39,12 @@ library(inbreedR)
 See `?inbreedR` for further information on the functions. 
 
 ***
-### Loading data, standardisation and transformation
+## Loading data, standardisation and transformation
 
 Loading the 
 
-* raw chemical data (scent_raw, called scent data from now), which is the output of Gas-chromatography peak detection was done in Xcalibur 2.0.5. 
-*(A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
-* and a data frame containing identities for colony membership (colony), mother-offspring pairs (family) and mothers
-and pups, respectively (age)
+- **chemical data** (scent_raw, called scent data from now), which is the output of Gas-chromatography peak detection was done in Xcalibur 2.0.5. (A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
+- **identities** for colony membership (colony), mother-offspring pairs (family) and mothers and pups, respectively (age)
 
 ```{r}
 scent_raw <- as.data.frame(t(read.csv(".\\files\\scent_raw.csv", row.names = 1)))
@@ -76,7 +73,8 @@ head(scent[1:6])
 ```
 
 ***
-### Colony differences in chemical fingerprints
+
+## Colony differences in chemical fingerprints
 
 ```{r, results="hide", message=FALSE}
 library(vegan)
@@ -121,7 +119,8 @@ vegan::anosim(dat = scent[factors$age == 2, ], grouping = factors$colony,
 *Genetic differentiation of the two colonies was assesed through bayesian structure analysis, with the software "Structure" [@Pritchard:2000uv]*  
 
 ***
-### Mother offspring similarity in chemical fingerprints. 
+
+## Mother offspring similarity in chemical fingerprints. 
 
 **Full sample**
 ```{r, cache=TRUE}
@@ -146,7 +145,8 @@ vegan::anosim(dat = scent[factors$colony == 2, ],
   
 
 ***
-### Chemical similarity vs. geographic distance on special study beach 
+
+## Chemical similarity vs. geographic distance on special study beach 
 
 * location data in meters is available for this population as the special study beach on Bird Island provides an aerial walkway
  
@@ -185,7 +185,8 @@ vegan::mantel(geo_pup, scent_pup, method = "spearman")
 ```
 
 ***
-### Correlation between genotype and overall chemical fingerprints. 
+
+## Correlation between genotype and overall chemical fingerprints. 
 
 #### Relatedness and overall chemical similarity
 
@@ -209,7 +210,7 @@ vegan::mantel(relatedness, scent_bc, method = "spearman", permutation = 1000)
 
 We find a significant relationship between the overall chemical fingerprints and genetic relatedness. However, we are likely to have a problem of pseudoreplication here. For that reason, we are analysing mothers and pups seperately.    
   
-**Fur seal mothers: mantel test between  genetic relatedness and bray curtis similarity of olfactory fingerprints.**
+**Fur seal mothers: mantel test between  genetic relatedness and bray curtis similarity of chemical  fingerprints.**
 
 ```{r}
 vegan::mantel(relatedness[factors$age == 1, factors$age == 1], 
@@ -217,7 +218,7 @@ vegan::mantel(relatedness[factors$age == 1, factors$age == 1],
               method = "spearman", permutation = 1000)
 ```
 
-**Fur seal pups: mantel test between genetic relatedness and bray curtis similarity of olfactory fingerprints.**
+**Fur seal pups: mantel test between genetic relatedness and bray curtis similarity of chemical fingerprints.**
 
 ```{r}
 vegan::mantel(relatedness[factors$age == 2, factors$age == 2], 
@@ -228,12 +229,9 @@ vegan::mantel(relatedness[factors$age == 2, factors$age == 2],
 ***
 ## Correlation between heterozygosity (sMLH) and diversity (number of compounds) of chemical fingerprints
 
-* The function `sMLH`  is part of the `inbreedR` package, currently available on GitHub. Install with: (decomment the whole section for actually installing from github)
+* The function `sMLH`  is part of the `inbreedR` package, currently available on GitHub. 
 
 ```{r}
-# install.packages("devtools")
-library(devtools)
-# install_github("mastoffel/inbreedR")
 library(inbreedR)
 # ?inbreedR
 ```
@@ -243,6 +241,7 @@ Loading raw genotypes and calculating standardised multilocus heterozygosity (sM
 
 ```{r}
 genotypes <- read.table(".\\files\\genotypes.txt", row.names=1)
+genotypes[1:6, 1:6]
 genotypes_formatted <- inbreedR::convert_raw(genotypes, miss_val = NA)  
 heterozygosity <- inbreedR::sMLH(genotypes_formatted)
 ```
@@ -263,7 +262,7 @@ num_comp_mum <- num_comp[factors$age==1]
 summary(lm(het_mum ~ num_comp_mum))
 ```
 
-Plotting is done with ggplot2, an implementation of the grammar of graphics [@ggplot2]
+Plotting with ggplot2, an implementation of the grammar of graphics [@ggplot2]
 
 ```{r, echo = FALSE, fig.width=6, fig.height=5}
 het_df <- as.data.frame(cbind(het_mum, num_comp_mum))
@@ -928,3 +927,9 @@ rel_m <- relatedness[1:41, 1:41]
 vegan::mantel(rel_m, scent_bc, method = "spearman", permutation = 1000, na.rm = TRUE)
 ```
 
+***
+
+R version and platform.
+```{r}
+sessionInfo()
+```
