@@ -13,16 +13,27 @@ bibliography: cites.bib
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning = FALSE
 ```
 
-This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. The Rmarkdown file as well as the data are stored on GitHub. For any questions just contact me: martin.adam.stoffel@gmail.com
+R version and platform.
+```{r}
+sessionInfo()
+```
 
-We wrote a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on this  [GitHub repository](https://github.com/mastoffel/scent/tree/master/final_script). The inbreedR package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, one needs to install the `devtools` package.  
+This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. All supplemented data files should be put in a subfolder called "files" for correct loading and functionality of the code.
+The Rmarkdown file as well as the data are stored on GitHub. For any questions just contact me: `martin.adam.stoffel@gmail.com`
 
-For running the complete code you need two additional functions (`get_pairdiff` and `multiplot`) which are outsourced as well as the `files` folder as a subfolder.
+We wrote a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on GitHub. The `inbreedR` package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, you need to install the `devtools` package. 
+
+```{r, eval = FALSE}
+# install.packages("devtools")
+library(devtools)
+install_github("mastoffel/inbreedR")
+```
+
+For running the complete code you need  a `files` subfolder with all the raw data files.
 
 ```{r, results="hide", message=FALSE, cache = TRUE}
 # install.packages("devtools")
 library(devtools)
-# install_github("mastoffel/inbreedR")
 library(inbreedR)
 ```
 
@@ -33,7 +44,8 @@ See `?inbreedR` for further information on the functions.
 
 Loading the 
 
-* raw chemical data (scent_raw, called scent data from now), which is the output of Gas-chromatography peak detection was done in Xcalibur 2.0.5 (talk about preprocessing here)
+* raw chemical data (scent_raw, called scent data from now), which is the output of Gas-chromatography peak detection was done in Xcalibur 2.0.5. 
+*(A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
 * and a data frame containing identities for colony membership (colony), mother-offspring pairs (family) and mothers
 and pups, respectively (age)
 
@@ -416,9 +428,41 @@ plot_all <- ggplot(df, aes_string(x = paste("F", i, sep = ""), fill = "colony"))
 
 assign(paste("f", i, "_plot", sep = ""), plot_all)
 }
+```
 
-# using multiplot function from cookbook-r.com for plotting multiple ggplots
-source("multiplot.R")
+
+**Multiplot function from `cookbook-r.com` for plotting multiple ggplots**
+```{r}
+multiplot <- function(..., plotlist=NULL, cols) {
+  require(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # Make the panel
+  plotCols = cols                          # Number of columns of plots
+  plotRows = ceiling(numPlots/plotCols) # Number of rows needed, calculated from # of cols
+  
+  # Set up the page
+  grid.newpage()
+  pushViewport(viewport(layout = grid.layout(plotRows, plotCols)))
+  vplayout <- function(x, y)
+    viewport(layout.pos.row = x, layout.pos.col = y)
+  
+  # Make each plot, in the correct location
+  for (i in 1:numPlots) {
+    curRow = ceiling(i/plotCols)
+    curCol = (i-1) %% plotCols + 1
+    print(plots[[i]], vp = vplayout(curRow, curCol ))
+  }
+  
+}
+```
+
+Plotting all factor distributions.
+```{r}
 multiplot(f1_plot, f2_plot, f4_plot, cols = 2)
 ```
   
@@ -466,9 +510,78 @@ Pairwise genetic relatedness is represented as a matrix. To model the relationsh
 
 `get_pairdiff()` creates these matrices. We based these analysis on mothers and pups seperately.
 
+```{r}
+get_pairdiff <- function(relate, scores, df=F) {
+# creates data.frame with  
+# pairwise differences in factor scores
+# input should be: relatedness data frame (lower triangular), 
+# data frame with factor scores in columns
+# if df=TRUE, get_pairdiff will return a list of score-difference
+# dataframes (for each component/factor) with pairwise pc-differences. 
+# make sure to have data.frames
+relate <- as.data.frame(relate)
+scores <- as.data.frame(scores)
+# copy similarity matrix and clear
+score_mat <- relate
+score_mat[, ] <- NA
+# get vector of pairwise-rownames
+allnames <- vector()
+for (i in 1:ncol(relate)) {
+        for (k in 1:nrow(relate)) {
+                nametemp <- paste(names(relate)[i], 
+                                  row.names(relate)[k], sep = "")
+                allnames <- append(allnames, nametemp)
+        }
+}
+# roll out as vector
+relate_vec <- unlist(relate)
+# label the rows
+names(relate_vec) <- allnames
+# delete na´s
+relate_vec <- relate_vec[!is.na(relate_vec)]
+# get new row-names vector
+pairnamessub <- names(relate_vec)
+# create raw data frame 
+fac_diff_all <- data.frame("relatedness"= relate_vec)
+# construct similarity matrix out of pairwise differences in factors
+names <- rownames(relate)
+row.names(scores) <- names
+fac_diff_mats <- list()
+
+for (z in 1:ncol(scores)) {
+        for (i in names) {
+                for (k in names) {
+                        if (!(is.na(relate[i,k]))) {
+                                diff_fac <- abs(scores[i,z] - scores[k,z])
+                                score_mat[i,k] <- diff_fac
+                        }
+                }
+        }
+        
+        # create list of data frames, containing difference matrices per Factor
+        fac_diff_mats <- c(fac_diff_mats, list(score_mat))
+        
+        # turn into vector
+        factor_diff <- as.vector(as.matrix(score_mat))
+        factor_diff <- factor_diff[!is.na(factor_diff)]
+        fac_diff_all <- cbind(fac_diff_all, factor_diff)
+}
+## check argument for what to return
+if (df == T) {
+        names(fac_diff_mats) <- names(scores)
+        return(fac_diff_mats)
+} else if (df == F) {
+        names(fac_diff_all) <- c("relatedness",names(scores))
+        row.names(fac_diff_all) <- pairnamessub
+        return(fac_diff_all)
+}
+}
+```
+
+
 Creation of 4 pairwise distance matrices for each factor.
 ```{r}
-source("get_pairdiff.R")
+# source("get_pairdiff.R")
 fa_diff_mums <- get_pairdiff(relatedness[factors$age == 1, factors$age == 1],
                              fa_scores[factors$age == 1, ], df = F)
 
@@ -593,6 +706,73 @@ All the following analyses are shown for the subset of mothers.
 The core of the idea is to use a bootstrapping procedure on the `BIO-ENV` function, originally by Clarke [@clarke2001primer], which was modified [@sinkr] to work with a bray curtis similarity matrix. For details see the methods part of the paper. The function is built to run on parallel with snowfall [@snowfall] on a server or similar, but still takes a couple of days to finish.
 
 Additional packages used are Hadley Wickham´s dplyr [@dplyr] and stringr [@stringr].
+First, the BIO-ENV function code is presented, followed by the bootstrap function.
+
+```{r}
+bio.env <- function(fix.mat, var.mat, 
+                    fix.dist.method="bray", var.dist.method="euclidean",
+                    scale.fix=FALSE, scale.var=TRUE,
+                    output.best=10,
+                    var.max=ncol(var.mat)
+){
+        # if(dim(fix.mat)[1] != dim(var.mat)[1]){stop("fixed and variable matrices must have the same number of rows")}
+        if(var.max > dim(var.mat)[2]){stop("var.max cannot be larger than the number of variables (columns) in var.mat")}
+        
+        require(vegan)
+        
+        combn.sum <- sum(factorial(ncol(var.mat))/(factorial(1:var.max)*factorial(ncol(var.mat)-1:var.max)))
+        
+        if(scale.fix){fix.mat<-scale(fix.mat)}else{fix.mat<-fix.mat}
+        if(scale.var){var.mat<-scale(var.mat)}else{var.mat<-var.mat}
+        # fix.dist <- vegdist(fix.mat, method=fix.dist.method)
+        fix.dist <- fix.mat
+        RES_TOT <- c()
+        best.i.comb <- c()
+        iter <- 0
+        for(i in 1:var.max){
+                var.comb <- combn(1:ncol(var.mat), i, simplify=FALSE)
+                RES <- data.frame(var.incl=rep(NA, length(var.comb)), n.var=i, rho=0)
+                for(f in 1:length(var.comb)){
+                        iter <- iter+1
+                        var.dist <- vegdist(as.matrix(var.mat[,var.comb[[f]]]), method=var.dist.method)
+                        temp <- suppressWarnings(cor.test(fix.dist, var.dist, method="spearman"))
+                        RES$var.incl[f] <- paste(var.comb[[f]], collapse=",")
+                        RES$rho[f] <- temp$estimate
+                        if(iter %% 100 == 0){print(paste(round(iter/combn.sum*100, 3), "% finished"))}
+                }
+                
+                order.rho <- order(RES$rho, decreasing=TRUE)
+                best.i.comb <- c(best.i.comb, RES$var.incl[order.rho[1]])
+                if(length(order.rho) > output.best){
+                        RES_TOT <- rbind(RES_TOT, RES[order.rho[1:output.best],])
+                } else {
+                        RES_TOT <- rbind(RES_TOT, RES)
+                }
+        }
+        rownames(RES_TOT)<-NULL
+        
+        if(dim(RES_TOT)[1] > output.best){
+                order.by.best <- order(RES_TOT$rho, decreasing=TRUE)[1:output.best]
+        } else {
+                order.by.best <- order(RES_TOT$rho, decreasing=TRUE)
+        }
+        OBB <- RES_TOT[order.by.best,]
+        rownames(OBB) <- NULL
+        
+        order.by.i.comb <- match(best.i.comb, RES_TOT$var.incl)
+        OBC <- RES_TOT[order.by.i.comb,]
+        rownames(OBC) <- NULL
+        
+        out <- list(
+                order.by.best=OBB,
+                order.by.i.comb=OBC,
+                best.model.vars=paste(colnames(var.mat)[as.numeric(unlist(strsplit(OBB$var.incl[1], ",")))], collapse=",") ,
+                best.model.rho=OBB$rho[1]
+        )
+        out
+}
+```
+
 
 
 ```{r, eval = FALSE}
@@ -612,7 +792,6 @@ library(stringr)
 library(dplyr)
 library(snow)
 library(snowfall)
-source("bio.env.R")
 
 # number of cores
 ncores <- 2
