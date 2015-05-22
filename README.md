@@ -1,10 +1,10 @@
 ### Overview 
-**Chemical fingerprints encode colony membership, mother-offspring similarity, relatedness and genetic quality in Fur seals**  
+**Chemical fingerprints encode mother-offspring similarity, colony membership, relatedness and genetic quality in fur seals**  
 Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart-Phillips,
   L.J. , Müller, C. & Hoffman, J.I.
 
-**analysis_markdown.Rmd** contains the code for our analyses. 
-In addition, we provide our data files, which should be placed in a subfolder called *files*.
+**analysis_markdown.pdf** contains the code for our analyses. 
+In addition, we provide our data files, which should be placed in a subfolder of the working directory called *files*.
 
 * **genotypes.txt** contains raw microsatellite data with each locus in two columns and individuals in rows
 * **scent_raw.csv** contains aligned GC data
