@@ -13,7 +13,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning =
 ```
 
 This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. All supplemented data files should be placed in a subfolder called "files" for correct loading and functionality of the code.
-The Rmarkdown file as well as the data are stored on GitHub. For any questions just contact me: `martin.adam.stoffel@gmail.com`
+The Rmarkdown .Rmd file as well as the PDF and the data are stored on [GitHub](https://github.com/mastoffel/seal_chemical_fingerprints). Just click on the link and then klick on *Download ZIP* on the right hand side of the page. For any questions just contact me: `martin.adam.stoffel[at]gmail.com`.
 The sequence of code follows roughly the sequence of analysis in the *Results* section of the paper.
 
 **Prerequisites:**
@@ -42,7 +42,7 @@ See `?inbreedR` for further information on the functions.
 
 Loading the 
 
-- **chemical data** (scent_raw, called scent data from now), which is the output of Gas-chromatogramm peak detection done in Xcalibur 2.0.5. (A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
+- **chemical data** (scent_raw, called scent data from now), which is the output of Gas-chromatogramm peak detection done in Xcalibur 2.0.5. *(A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
 - **identities** for colony membership (colony), mother-offspring pairs (family) and mothers and pups, respectively (age)
 
 ```{r}
