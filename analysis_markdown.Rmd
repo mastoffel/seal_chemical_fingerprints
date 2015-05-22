@@ -13,7 +13,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning =
 ```
 
 This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. All supplemented data files should be placed in a subfolder called "files" for correct loading and functionality of the code.
-The Rmarkdown .Rmd file as well as the PDF and the data are stored on [GitHub](https://github.com/mastoffel/seal_chemical_fingerprints). Just click on the link and then klick on *Download ZIP* on the right hand side of the page. For any questions just contact me: `martin.adam.stoffel[at]gmail.com`.
+The Rmarkdown .Rmd file as well as the PDF and the data are stored on [GitHub](https://github.com/mastoffel/seal_chemical_fingerprints). Just click on the link and then on *Download ZIP* on the right-hand side of the page. For any questions just contact me: `martin.adam.stoffel[at]gmail.com`.
 The sequence of code follows roughly the sequence of analysis in the *Results* section of the paper.
 
 **Prerequisites:**
@@ -270,10 +270,10 @@ library(grid)
 ggplot2::ggplot(het_df, aes(x=het_mum, y=num_comp_mum)) +
         geom_point(colour = "black", size = 2.5) +
         geom_smooth(method="lm",size = 1 ,alpha=0.13, colour="black", fill = "lightblue") +
-        theme_minimal(base_size = 14) +
-        theme(strip.text.x = element_text(vjust=1,size = 14),
-              axis.title.x = element_text(vjust= -2 ,size = 14),
-              axis.title.y = element_text(vjust=3,size = 14),
+        theme_minimal(base_size = 12) +
+        theme(strip.text.x = element_text(vjust=1,size = 12),
+              axis.title.x = element_text(vjust= -2 ,size = 12),
+              axis.title.y = element_text(vjust=3,size = 12),
               axis.ticks.x = element_blank(),
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
@@ -346,10 +346,10 @@ ggplot2::ggplot(results_mums, aes(x = locnum, y = cormean)) +
         geom_line(size = 0.6, colour = "black") +
         geom_errorbar(aes(ymin = cormean-corse, ymax = cormean+corse),
                       width=0.8, alpha=0.7, size = 0.8, colour = "black") +
-        geom_point(size = 2, shape = 16) +
-        theme_minimal(base_size = 16) +
-        theme(axis.title.x = element_text(vjust= -2 ,size = 16),
-              axis.title.y = element_text(vjust=3,size = 16),
+        geom_point(size = 2, shape = 12) +
+        theme_minimal(base_size = 12) +
+        theme(axis.title.x = element_text(vjust= -2 ,size = 12),
+              axis.title.y = element_text(vjust=3,size = 12),
               axis.ticks.x = element_blank(),
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
@@ -410,9 +410,9 @@ ggplot2::ggplot(results_g2, aes(x = locnum, y = cormean)) +
         geom_errorbar(aes(ymin = cormean-corsd, ymax = cormean+corsd),
                       width=0.8, alpha=0.7, size = 0.8, colour = "black") +
         geom_point(size = 2, shape = 16) +
-        theme_minimal(base_size = 16) +
-        theme(axis.title.x = element_text(vjust= -2 ,size = 16),
-              axis.title.y = element_text(vjust=3,size = 16),
+        theme_minimal(base_size = 12) +
+        theme(axis.title.x = element_text(vjust= -2 ,size = 12),
+              axis.title.y = element_text(vjust=3,size = 12),
               axis.ticks.x = element_blank(),
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
@@ -422,7 +422,6 @@ ggplot2::ggplot(results_g2, aes(x = locnum, y = cormean)) +
         labs(title = "g2 estimated from an increasing number of loci")
 ```
 
-*potentially make figure for increasing markers here*
 
 ***
 
@@ -465,7 +464,7 @@ plot_all <- ggplot(df, aes_string(x = paste("F", i, sep = ""), fill = "colony"))
         geom_density(alpha=0.8, size=0.5, aes(fill = colony),adjust=1.5) +
         scale_fill_manual(values = c("blue","red")) +
         guides(fill=guide_legend(title=NULL)) +
-        theme_minimal(base_size = 16) + 
+        theme_minimal(base_size = 12) + 
         theme(legend.position="none") +
         scale_x_continuous(breaks = c(seq(from = -1, to = 6, by = 1))) + 
         scale_y_continuous(breaks = c(seq(from = 0, to = 1.4, by = 0.4))) +  
@@ -945,10 +944,10 @@ library(grid)
 ggplot2::ggplot(stat_df, aes(x = num_comps, y = mantelR)) +
         stat_smooth(se = FALSE, span = 0.16, size = 1.3, method = "loess") +
         geom_point(colour = "black", size = 3, alpha = 0.8) +
-        theme_minimal(base_size = 16) +
-        theme(strip.text.x = element_text(vjust=1,size = 16),
-              axis.title.x = element_text(vjust= -2 ,size =16),
-              axis.title.y = element_text(vjust=3,size = 16),
+        theme_minimal(base_size = 12) +
+        theme(strip.text.x = element_text(vjust=1,size = 12),
+              axis.title.x = element_text(vjust= -2 ,size =12),
+              axis.title.y = element_text(vjust=3,size = 12),
               axis.ticks.x = element_blank(),
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
