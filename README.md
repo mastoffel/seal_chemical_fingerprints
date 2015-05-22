@@ -4,7 +4,7 @@ Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart
   L.J. , Müller, C. & Hoffman, J.I.
 
 **analysis_markdown.pdf** contains the code for our analyses. 
-In addition, we provide our data files, which should be placed in a subfolder of the working directory called *files*.
+In addition, we provide our data in the folder called *files*, which should be placed in a subfolder of the working directory called *files*.
 
 * **genotypes.txt** contains raw microsatellite data with each locus in two columns and individuals in rows
 * **scent_raw.csv** contains aligned GC data
