@@ -1,6 +1,5 @@
 ---
-title: R-code for "Chemical signatures encode colony membership, mother-offspring similarity,
-  relatedness and genetic quality in Fur seals""
+title: R-code for "Chemical fingerprints encode mother-offspring similarity, colony membership, relatedness and genetic quality in fur seals"
 author: Stoffel, M.A., Caspers, B.A., Forcada, J., Giannakara, A., Baier, M.C., Eberhart-Phillips,
   L.J. , Müller, C. & Hoffman, J.I.
 output:
@@ -43,7 +42,7 @@ See `?inbreedR` for further information on the functions.
 
 Loading the 
 
-- **chemical data** (scent_raw, called scent data from now), which is the output of Gas-chromatography peak detection was done in Xcalibur 2.0.5. (A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
+- **chemical data** (scent_raw, called scent data from now), which is the output of Gas-chromatogramm peak detection done in Xcalibur 2.0.5. (A first preprocessing was done by aligning the raw chemical data and removing substances that have been present in the control sample, see Methods part of the paper)*
 - **identities** for colony membership (colony), mother-offspring pairs (family) and mothers and pups, respectively (age)
 
 ```{r}
@@ -279,7 +278,7 @@ ggplot2::ggplot(het_df, aes(x=het_mum, y=num_comp_mum)) +
               axis.ticks.y = element_blank(),
               plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
         scale_x_continuous(breaks=c(seq(from = 0.8, to = 1.20, by = 0.1))) +
-        geom_text(aes(0.85,50, label="r = 0.34, p = 0.027"),size=4, colour = "blue") +
+        geom_text(aes(0.85,50, label="r = 0.34, p = 0.027"),size=3, colour = "blue") +
         labs(title = "Correlation of sMLH and chemical complexity \nin Fur seal mothers")+
         xlab("sMLH") +
         ylab("number of compounds") 
@@ -316,7 +315,7 @@ resample_loci <- function(genotypes, y, num_iter = 1000) {
 results
 }
 
-# Converting genotypes into the right format 
+# Converting genotypes into the right format
 genotypes_formatted <- inbreedR::convert_raw(genotypes, miss_val = NA)  
 # Resampling 1 - 40 loci each 1000 times, compute sMLH and correlate with number of compounds
 resample_mums <- resample_loci(genotypes_formatted, num_comp_mum, num_iter = 1000)
@@ -374,6 +373,55 @@ g2 <- inbreedR::g2_microsats(genotypes_formatted, nperm = 1000, nboot = 1000, CI
 ```{r, cache=TRUE, echo = FALSE}
 g2
 ```
+
+Flexibility of the g2 functions in the inbreedR package allow for further analysis of the parameter. A good start is estimate g2 from an increasing number of subsampled loci. 
+
+```{r, cache=TRUE, echo = FALSE}
+resample_loc_g2 <- function(genotypes_formatted, niter) {
+    nloc <- ncol(genotypes_formatted)
+    all_g2 <- matrix(data = NA, nrow = niter, ncol = nloc-1)
+    
+    for (i in 2:nloc) {
+        for (k in 1:niter) {
+            ind <- sample(1:41, i)
+            gene_sub <- genotypes_formatted[ind]
+            all_g2[k, i-1] <- g2_microsats(gene_sub)$g2
+        }
+    }
+    all_g2
+}
+```
+
+```{r, cache=TRUE}
+resampling_g2 <- resample_loc_g2(genotypes_formatted, niter = 1000)
+```
+
+```{r}
+results_g2 <- sum_results(resampling_g2) 
+```
+
+Plotting the mean +- sd of g2 estimated from increasing amount of microsats.
+
+```{r, fig.width=6, fig.height=5}
+# plotting
+library(grid)
+ggplot2::ggplot(results_g2, aes(x = locnum, y = cormean)) +
+        geom_line(size = 0.6, colour = "black") +
+        geom_errorbar(aes(ymin = cormean-corsd, ymax = cormean+corsd),
+                      width=0.8, alpha=0.7, size = 0.8, colour = "black") +
+        geom_point(size = 2, shape = 16) +
+        theme_minimal(base_size = 16) +
+        theme(axis.title.x = element_text(vjust= -2 ,size = 16),
+              axis.title.y = element_text(vjust=3,size = 16),
+              axis.ticks.x = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.margin = (unit(c(.5, .5, 2, 2), "cm"))) +
+        #geom_hline(yintercept=0.305) +
+        ylab("g2") +
+        xlab("number of loci") +
+        labs(title = "g2 estimated from an increasing number of loci")
+```
+
 *potentially make figure for increasing markers here*
 
 ***
@@ -384,7 +432,6 @@ HDMD [@HDMD] allows for doing a Factor analysis with high dimensional data(where
 ```{r}
 library(HDMD)
 library(minmodelr)
-source("get_pairdiff.R") 
 ```
 
 Factor analysis and extraction of factor scores for the first 4 factors. Promax rotation of the factors allows them to be non-orthogonal and thus correlated. After FA, the factor scores for each individual on all 4 factors are extracted.
