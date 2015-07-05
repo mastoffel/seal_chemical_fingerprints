@@ -7,35 +7,35 @@ output:
   html_document:
     highlight: pygments
 bibliography: cites.bib
+
 ---
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", cache = TRUE) # warning = FALSE
 ```
 
-This document provides the code for all major analysis from our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. All supplemented data files should be placed in a subfolder called "files" for correct loading and functionality of the code.
-The Rmarkdown .Rmd file as well as the PDF and the data are stored on [GitHub](https://github.com/mastoffel/seal_chemical_fingerprints). Just click on the link and then on *Download ZIP* on the right-hand side of the page. For any questions just contact me: `martin.adam.stoffel[at]gmail.com`.
+This document provides the code for all major analysis in our paper. Duplicate analyses that have not been part of an argument (e.g. most analysis for pups) were strapped out for readability. 
+Both the Rmarkdown file and the data can be assessed directly from the hyperlinks in the methods section of the paper (Dataset S1, Dataset S2) or by downloading this [GitHub](https://github.com/mastoffel/seal_chemical_fingerprints) repository. Just click on the link and then on *Download ZIP* on the right-hand side of the page. Make sure you read the instructions in the xlsx sheet if you downloaded the data from the paper or from the Readme file on GitHub if you downloaded the repository.
+If you have any questions, don´t hesitate contacting me: `martin.adam.stoffel[at]gmail.com`.
+
 The sequence of code follows roughly the sequence of analysis in the *Results* section of the paper.
 
 **Prerequisites:**
 
-* We wrote a package for doing some of the inbreeding related analysis, such as calculating g2 or sMLH which is hosted on GitHub. The `inbreedR` package provides functions for measuring inbreeding from molecular data (SNPs and microsatellites) and will soon be published. To download packages from GitHub repositories, you need to install the `devtools` package. 
+* Some of the functions in the analysis (g2, sMLH) are part of the `inbreedR` package, that we wrote in parallel to the analyses. The `inbreedR` package provides a framework for calculating inbreeding and HFCs from genetic markers (SNPs and microsatellites) and will soon be published on CRAN. To download the newest version of the package from the developer platform GitHub, you need to install the `devtools` package as shown in the next section.
 * For running the complete code you need  a `files` subfolder with all the raw data files.
-
 
 Installing `inbreedR` from GitHub.
 
-```{r, eval = FALSE}
+```{r, results="hide", message=FALSE, cache = TRUE}
 # install.packages("devtools")
 library(devtools)
-install_github("mastoffel/inbreedR")
-```
-
-```{r, results="hide", message=FALSE, cache = TRUE}
-library(devtools)
+# uncomment the next line for downloading and installing inbreedR
+# install_github("mastoffel/inbreedR")
 library(inbreedR)
 ```
 
-See `?inbreedR` for further information on the functions. 
+See `?inbreedR` for further information on the functions or type
+`browseVignettes(package = "inbreedR")` to have a look at the vignette.
 
 ***
 ## Loading data, standardisation and transformation
@@ -241,7 +241,7 @@ Loading raw genotypes and calculating standardised multilocus heterozygosity (sM
 ```{r}
 genotypes <- read.table(".\\files\\genotypes.txt", row.names=1)
 genotypes[1:6, 1:6]
-genotypes_formatted <- inbreedR::convert_raw(genotypes, miss_val = NA)  
+genotypes_formatted <- inbreedR::convert_raw(genotypes, miss = NA)  
 heterozygosity <- inbreedR::sMLH(genotypes_formatted)
 ```
 
@@ -316,7 +316,7 @@ results
 }
 
 # Converting genotypes into the right format
-genotypes_formatted <- inbreedR::convert_raw(genotypes, miss_val = NA)  
+genotypes_formatted <- inbreedR::convert_raw(genotypes, miss = NA)  
 # Resampling 1 - 40 loci each 1000 times, compute sMLH and correlate with number of compounds
 resample_mums <- resample_loci(genotypes_formatted, num_comp_mum, num_iter = 1000)
 ```
